@@ -1,0 +1,20 @@
+{
+    "name": "postgres-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "tasks.max": "1",
+        "database.hostname": "postgresql-odoo-server",
+        "database.port": "5432",
+        "database.user": "demo",
+        "database.password": "demo",
+        "database.dbname" : "odoodemo",
+        "database.server.name": "dbserver1",
+        "table.whitelist": "public.sale_order, public.sale_order_line, public.res_partner, public.product_product, public.product_template, public.product_pricelist",
+        "key.converter": "io.confluent.connect.avro.AvroConverter",
+        "key.converter.schema.registry.url": "http://kafkaschemaregistry-server:8081",
+        "value.converter": "io.confluent.connect.avro.AvroConverter",
+        "value.converter.schema.registry.url": "http://kafkaschemaregistry-server:8081",
+        "decimal.handling.mode": "string",
+        "hstore.handling.mode": "json"
+    }
+}

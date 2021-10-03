@@ -1,0 +1,125 @@
+version: "3.3"
+services:
+## POSTGRES FOR ODOO
+  postgresql-odoo-server:
+    image: $USER/postgresql:latest
+    container_name: postgresql-odoo-server
+    hostname: postgresql-server
+    ports:
+      - "5432:5432"
+    networks:
+      - spark-network
+    environment:
+      - POSTGRES_PASSWORD=demo
+      - POSTGRES_USER=demo
+      - POSTGRES_DB=postgres
+
+## CLOUD BLOB STORAGE EMULATORS - AWS S3 LOCALSTACK
+  localstack-server:
+    image: $USER/localstack:latest
+    container_name: localstack-server
+    hostname: localstack-server
+    ports:
+      - "4563-4584:4563-4584"
+    networks:
+      - spark-network
+    environment:
+      - SERVICES=s3
+      - DEBUG=1
+      - DATA_DIR=/localstack/data
+  
+## KAFKA-cluster
+  zookeeper-server:
+    image: $USER/zookeeper:latest
+    container_name: zookeeper-server
+    hostname: zookeeper-server
+    networks:
+      - spark-network
+  kafka-server:
+    image: $USER/kafka:latest
+    depends_on:
+      - zookeeper-server
+    container_name: kafka-server
+    hostname: kafka-server
+    networks:
+      - spark-network
+    volumes:
+      - ./zzz_app:/opt/app
+      - ./zzz_data:/opt/data
+    environment:
+      - ZOOKEEPER_CONNECT=zookeeper-server
+  kafkaconnect-server:
+    image: $USER/kafkaconnect:latest
+    depends_on:
+      - zookeeper-server
+      - kafka-server
+    networks:
+      - spark-network
+    volumes:
+      - ./zzz_app:/opt/app
+      - ./zzz_data:/opt/data
+    environment:
+      - BOOTSTRAP_SERVERS=kafka-server:9092
+      - GROUP_ID=1
+      - CONFIG_STORAGE_TOPIC=my-connect-configs
+      - OFFSET_STORAGE_TOPIC=my-connect-offsets
+      - STATUS_STORAGE_TOPIC=my-connect-statuses
+      - AWS_ACCESS_KEY_ID=mock
+      - AWS_SECRET_ACCESS_KEY=mock
+  kafkaschemaregistry-server:
+    image: $USER/kafkaschemaregistry:latest
+    depends_on:
+      - zookeeper-server
+      - kafka-server
+    container_name: kafkaschemaregistry-server
+    hostname: kafkaschemaregistry-server
+    ports:
+      - "8081:8081"
+    networks:
+      - spark-network
+    environment:
+      - SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=zookeeper-server:2181
+      - SCHEMA_REGISTRY_HOST_NAME="kafkaschemaregistry-server"
+      - SCHEMA_REGISTRY_LISTENERS=http://0.0.0.0:8081
+      - SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS="kafka-server:9092"
+
+## ERP DEMO application - ODOO ERP-application
+  odoo-server:
+    image: $USER/odoo:latest
+    depends_on:
+      - postgresql-odoo-server
+    container_name: odoo-server
+    hostname: odoo-server
+    ports:
+      - "8069:8069"
+    networks:
+      - spark-network
+    environment:
+      - HOST=postgresql-odoo-server
+      - USER=demo
+      - PASSWORD=demo
+    volumes:
+      - ./config:/etc/odoo
+      - ./addons:/mnt/extra-addonsvolumes
+    command: "odoo -d odoodemo -i sale,sale_management"
+
+## MANAGEMENT - UBUNTU 20.04 image
+  management-server:
+    image: $USER/management:latest
+    container_name: management-server
+    hostname: management-server
+    networks:
+      - spark-network
+    volumes:
+      - ./zzz_app:/opt/app
+      - ./zzz_data:/opt/data
+    command: "sleep infinity"
+networks:
+  spark-network:
+    driver: bridge
+    ipam:
+      driver: default
+volumes:
+  postgresql_data:
+    driver: local
+                      

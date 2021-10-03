@@ -1,0 +1,14 @@
+{
+    "name": "postgres-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "tasks.max": "1",
+        "database.hostname": "postgresql-odoo-server",
+        "database.port": "5432",
+        "database.user": "demo",
+        "database.password": "demo",
+        "database.dbname" : "odoodemo",
+        "database.server.name": "dbserver1",
+        "table.whitelist": "public.sale_order"
+    }
+}
