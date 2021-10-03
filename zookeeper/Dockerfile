@@ -1,1 +1,1 @@
-FROM debezium/zookeeper:1.5
+FROM debezium/zookeeper:1.6
